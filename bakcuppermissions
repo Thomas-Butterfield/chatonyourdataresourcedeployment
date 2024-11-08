@@ -1,0 +1,48 @@
+param userPrincipalName string
+param storageAccountName string // The name of the existing storage account  
+param openAiServiceName string // The name of the existing OpenAI service
+
+
+// Role definition ID for Blob Data Reader  
+var blobDataReaderRoleDefinitionId = '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1' // Blob Data Reader role ID  
+var cognitiveServicesOpenAiContributorRoleId = 'a001fd3d-188f-4b5d-821b-7da978bf7442' // Cognitive Services OpenAI Contributor role ID
+
+  
+
+// Reference to the existing storage account  
+resource existingStorageAccount 'Microsoft.Storage/storageAccounts@2021-04-01' existing = {  
+  name: storageAccountName  
+  scope: resourceGroup() // Specify the resource group if needed  
+} 
+
+// Reference to the existing OpenAI
+resource existingOpenAI 'Microsoft.Storage/storageAccounts@2021-04-01' existing = {  
+  name: openAiServiceName  
+  scope: resourceGroup() // Specify the resource group if needed  
+} 
+
+var roleblobDataReaderAssignmentName= guid(userPrincipalName, blobDataReaderRoleDefinitionId, resourceGroup().id)
+resource roleblobDataReaderAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: roleblobDataReaderAssignmentName
+  scope: existingStorageAccount
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', blobDataReaderRoleDefinitionId)
+    principalId: userPrincipalName
+  }
+}
+
+//
+var roleCognitiveServicesContributorName = guid(userPrincipalName, cognitiveServicesOpenAiContributorRoleId, resourceGroup().id)
+resource roleCognitiveServicesContrultorAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: roleCognitiveServicesContributorName
+  scope: existingOpenAI
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesOpenAiContributorRoleId)
+    principalId: userPrincipalName
+  }
+}
+
+output name string = roleblobDataReaderAssignment.name
+output resourceGroupName string = resourceGroup().name
+output resourceId string = roleblobDataReaderAssignment.id
+
