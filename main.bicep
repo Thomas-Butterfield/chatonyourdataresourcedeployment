@@ -12,6 +12,7 @@ param location string = resourceGroup().location
 param tags object
 param keyVaultName string
 param appInsightsName string
+param disablePublicNetworkAccess string
 
 // Define the Azure Key Vault
 resource keyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
@@ -22,7 +23,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
       family: 'A'
       name: 'standard'
     }
-    publicNetworkAccess: 'disabled'
+    publicNetworkAccess: disablePublicNetworkAccess
     tenantId: subscription().tenantId
     accessPolicies: []
   }
@@ -59,7 +60,7 @@ resource aiHub 'Microsoft.MachineLearningServices/workspaces@2024-10-01-preview'
     } : null
     allowRoleAssignmentOnRG: true
     v1LegacyMode: false
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: disablePublicNetworkAccess
     enableDataIsolation: true
     systemDatastoresAuthMode: 'identity'
     enableServiceSideCMKEncryption: false
@@ -129,7 +130,7 @@ resource openAiService 'Microsoft.CognitiveServices/accounts@2021-04-30' = {
     networkAcls: createNetworkRules ? {
       defaultAction: 'Deny'
     } : null
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: disablePublicNetworkAccess
   }
 }
 
@@ -187,7 +188,7 @@ resource searchService 'Microsoft.Search/searchServices@2024-03-01-preview' = {
       bypass: 'AzureServices'
       ipRules: []
     } : null
-    publicNetworkAccess: 'disabled'
+    publicNetworkAccess: disablePublicNetworkAccess
   }
 }
 
@@ -212,6 +213,7 @@ resource openAiPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' =
     ]
   }
 }
+
 resource storageBlobPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = if (createNetworkRules) {
   name: '${storageAccountName}-blob-pe'
   location: location
@@ -226,6 +228,27 @@ resource storageBlobPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-
           privateLinkServiceId: storageAccount.id
           groupIds: [
             'blob'
+          ]
+        }
+      }
+    ]
+  }
+}
+
+resource aiHubPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = if (createNetworkRules) {
+  name: '${aiHubName}-pe'
+  location: location
+  properties: {
+    subnet: {
+      id: subnetId
+    }
+    privateLinkServiceConnections: [
+      {
+        name: '${aiHubName}-plsc'
+        properties: {
+          privateLinkServiceId: aiHub.id
+          groupIds: [
+            'amlworkspace'
           ]
         }
       }
